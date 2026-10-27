@@ -1,3 +1,5 @@
+import type { PirateCrew, WantedItem, WantedQuery, WantedPageData, WantedDetailData } from './wanted-models'
+import { wantedSearch, wantedStatuses } from './wanted-models'
 // Modelo del frontend, adaptado al contrato público /docs/json.
 export interface Crew { teamName: string; teamCode: string; email: string }
 export interface Session { token: string; crew: Crew }
@@ -15,7 +17,7 @@ export interface DashboardData {
 }
 
 export class ServiceError extends Error {
-  readonly kind: 'offline' | 'unauthorized' | 'validation' | 'network'
+  readonly kind: 'offline' | 'unauthorized' | 'validation' | 'network' | 'not-found'
   readonly fields: FieldErrors
   constructor(message: string, kind: ServiceError['kind'], fields: FieldErrors = {}) {
     super(message)
@@ -30,6 +32,9 @@ export interface Gateway {
   register(registration: Registration): Promise<Session>
   restore(token: string, signal: AbortSignal): Promise<Crew>
   dashboard(token: string, signal: AbortSignal): Promise<DashboardData>
+  crews(token: string, signal: AbortSignal): Promise<PirateCrew[]>
+  wanted(token: string, query: WantedQuery, signal: AbortSignal): Promise<WantedPageData>
+  wantedDetail(token: string, id: string, signal: AbortSignal): Promise<WantedDetailData>
 }
 
 type JsonObject = Record<string, unknown>
@@ -50,6 +55,19 @@ function readCrew(payload: JsonObject): Crew {
   const user = object(payload.user)
   return { teamName: text(team.name), teamCode: text(team.code), email: text(user.email) }
 }
+function readWanted(value: unknown): WantedItem {
+  const item = object(value)
+  const crew = object(item.crew)
+  const status = wantedStatuses.find(status => status === item.status)
+  if (!status) throw new ServiceError('El cartel contiene un estado desconocido. Reintenta la consulta.', 'network')
+  const fruit = item.devilFruit === null ? null : object(item.devilFruit)
+  return {
+    id: text(item.id), name: text(item.name), epithet: text(item.epithet), bounty: count(item.bounty), status,
+    crew: { id: text(crew.id), name: text(crew.name) }, role: text(item.role),
+    devilFruit: fruit ? { name: text(fruit.name), type: text(fruit.type) } : null,
+    threatLevel: count(item.threatLevel), lastSeenIsland: text(item.lastSeenIsland), updatedAt: text(item.updatedAt),
+  }
+}
 function apiError(payload: unknown, status: number, retryAfter: string | null): ServiceError {
   const data = payload && typeof payload === 'object' ? payload as JsonObject : {}
   const code = typeof data.code === 'string' ? data.code : ''
@@ -69,12 +87,12 @@ function apiError(payload: unknown, status: number, retryAfter: string | null): 
     const seconds = Number(retryAfter ?? data.retryAfterSeconds)
     message = Number.isFinite(seconds) && seconds > 0 ? `Demasiadas solicitudes. Espera ${Math.ceil(seconds)} segundos antes de reintentar.` : 'Demasiadas solicitudes. Espera un momento antes de reintentar.'
   }
-  return new ServiceError(message, status === 401 && code !== 'INVALID_CREDENTIALS' ? 'unauthorized' : status < 500 ? 'validation' : 'network', fields)
+  return new ServiceError(message, status === 404 ? 'not-found' : status === 401 && code !== 'INVALID_CREDENTIALS' ? 'unauthorized' : status < 500 ? 'validation' : 'network', fields)
 }
 
 export function createHttpGateway(baseUrl: string, fetcher: typeof fetch = (...args) => fetch(...args)): Gateway {
   const base = baseUrl.trim().replace(/\/+$/, '')
-  async function request(path: string, options: { token?: string; body?: Credentials | Registration; signal?: AbortSignal } = {}): Promise<JsonObject> {
+  async function requestJson(path: string, options: { token?: string; body?: Credentials | Registration; signal?: AbortSignal } = {}): Promise<unknown> {
     if (!base) throw new ServiceError('Falta configurar VITE_API_BASE_URL. Revisa el archivo .env y reinicia la aplicación.', 'offline')
     const controller = new AbortController()
     const abort = () => controller.abort()
@@ -92,7 +110,7 @@ export function createHttpGateway(baseUrl: string, fetcher: typeof fetch = (...a
       })
       const payload: unknown = await response.json().catch(() => null)
       if (!response.ok) throw apiError(payload, response.status, response.headers.get('Retry-After'))
-      return object(payload)
+      return payload
     } catch (error: unknown) {
       if (options.signal?.aborted) throw new DOMException('Solicitud cancelada', 'AbortError')
       if (error instanceof ServiceError) throw error
@@ -101,6 +119,9 @@ export function createHttpGateway(baseUrl: string, fetcher: typeof fetch = (...a
       clearTimeout(timeout)
       options.signal?.removeEventListener('abort', abort)
     }
+  }
+  async function request(path: string, options: Parameters<typeof requestJson>[1] = {}): Promise<JsonObject> {
+    return object(await requestJson(path, options))
   }
   async function authenticate(path: string, body: Credentials | Registration): Promise<Session> {
     const payload = await request(path, { body })
@@ -112,6 +133,29 @@ export function createHttpGateway(baseUrl: string, fetcher: typeof fetch = (...a
     login: data => authenticate('/auth/login', data),
     register: data => authenticate('/auth/register', data),
     restore: async (token, signal) => readCrew(await request('/auth/me', { token, signal })),
+    crews: async (token, signal) => {
+      const payload = await requestJson('/crews', { token, signal })
+      if (!Array.isArray(payload)) throw new ServiceError('No pudimos leer las tripulaciones. Reintenta la carga.', 'network')
+      return payload.map(value => { const crew = object(value); return { id: text(crew.id), name: text(crew.name) } })
+    },
+    wanted: async (token, query, signal) => {
+      const payload = await request(`/wanted?${wantedSearch(query)}`, { token, signal })
+      if (!Array.isArray(payload.content)) throw new ServiceError('No pudimos leer los carteles. Reintenta la carga.', 'network')
+      const page = count(payload.page)
+      const size = count(payload.size)
+      if (page !== query.page || size !== query.size) throw new ServiceError('El servidor devolvió una página distinta a la solicitada. Reintenta la carga.', 'network')
+      return { content: payload.content.map(readWanted), totalElements: count(payload.totalElements), totalPages: count(payload.totalPages), page, size }
+    },
+    wantedDetail: async (token, id, signal) => {
+      const payload = await request(`/wanted/${encodeURIComponent(id)}`, { token, signal })
+      const lastSeen = object(payload.lastSeen)
+      if (!Array.isArray(payload.bountyHistory)) throw new ServiceError('El historial del cartel está incompleto. Reintenta la carga.', 'network')
+      return {
+        ...readWanted(payload), age: count(payload.age), heightCm: count(payload.heightCm), bio: text(payload.bio),
+        lastSeen: { island: text(lastSeen.island), seenAt: text(lastSeen.seenAt) },
+        bountyHistory: payload.bountyHistory.map(value => { const entry = object(value); return { amount: count(entry.amount), issuedAt: text(entry.issuedAt) } }),
+      }
+    },
     dashboard: async (token, signal) => {
       const [summary, pose] = await Promise.all([
         request('/dashboard/summary', { token, signal }),

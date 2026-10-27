@@ -5,6 +5,8 @@ import { safeReturnPath, useAuth } from './auth'
 import { Arrow, Compass, Loading, primaryButton, Spinner, Status, textButton } from './components'
 import type { DashboardData, FieldErrors } from './services'
 import { apiConfigured, ServiceError } from './services'
+import { Brand, ConsoleLayout } from './ConsoleLayout'
+import { WantedPage, WantedDetail } from './Wanted'
 
 const labelClass = 'mb-2 block text-xs font-semibold'
 const inputClass = 'h-12 w-full rounded-md border border-[#bbc6bb] bg-[#fdfcf8] px-3 text-sm text-ink placeholder:text-[#727c73] aria-invalid:border-danger disabled:opacity-70'
@@ -108,10 +110,6 @@ function AuthPage({ register = false }: { register?: boolean }) {
   </main>
 }
 
-function Brand({ to }: { to: string }) {
-  return <Link className="flex items-center gap-2.5 font-serif text-[27px] leading-none text-[#f3ebd9] no-underline" to={to}><Compass className="size-10" /><span>Log Pose<span className="mt-1.5 block font-sans text-[10px] tracking-wider">Consola de la tripulación</span></span></Link>
-}
-
 type DashboardState = { status: 'loading' } | { status: 'empty'; data: DashboardData } | { status: 'error'; message: string } | { status: 'ready'; data: DashboardData }
 function DashboardDetails({ state }: { state: DashboardState }) {
   if (state.status !== 'ready') return null
@@ -121,12 +119,6 @@ function DashboardDetails({ state }: { state: DashboardState }) {
     {data.mostWantedCrew && <p className="mt-2 text-xs text-muted">Tripulación con mayor recompensa: <strong>{data.mostWantedCrew}</strong>.</p>}
     {data.generatedAt && !Number.isNaN(Date.parse(data.generatedAt)) && <p className="mt-2 text-xs text-muted">Resumen actualizado: {new Date(data.generatedAt).toLocaleString('es-PE')}.</p>}
   </section>
-}
-
-function NavItem({ children, active = false, checkpoint }: { children: string; active?: boolean; checkpoint?: string }) {
-  return <span className={`flex min-h-10 items-center justify-center rounded px-1.5 py-2 text-[11px] md:min-h-11 md:justify-between md:px-3.5 md:py-3 md:text-[13px] ${active ? 'bg-sea-active text-[#fff4db]' : 'text-[#b3c6b8]'}`} aria-current={active ? 'page' : undefined}>
-    {children}{checkpoint && <small className="hidden rounded-sm border border-[#5d7e71] px-1 py-0.5 text-[9px] md:inline">{checkpoint}</small>}
-  </span>
 }
 
 function Dashboard() {
@@ -148,21 +140,7 @@ function Dashboard() {
   }, [auth, gateway, attempt, logout])
   const crew = auth.status === 'authenticated' ? auth.session.crew : null
   const poseData = state.status === 'ready' || state.status === 'empty' ? state.data : null
-  return <div className="min-h-svh md:grid md:grid-cols-[200px_minmax(0,1fr)] lg:grid-cols-[236px_minmax(0,1fr)]">
-    <aside className="flex flex-col gap-4 bg-sea px-5 py-4 text-[#f4e9d4] md:gap-0 md:px-6 md:py-8">
-      <Brand to="/dashboard" />
-      <nav className="grid grid-cols-4 gap-1 md:mt-14 md:grid-cols-1 md:gap-2" aria-label="Navegación principal">
-        <NavItem active>Bitácora</NavItem><NavItem checkpoint="CP2">Carteles</NavItem><NavItem checkpoint="CP4">Noticias</NavItem><NavItem checkpoint="CP5">Sagas</NavItem>
-      </nav>
-      <div className="flex items-center justify-between gap-4 text-[10px] text-[#bbd0bf] md:mt-auto md:block md:pt-16">
-        <span className="hidden md:inline">El viaje empieza en East Blue.</span>
-        <button className="flex cursor-pointer items-center justify-end gap-2.5 bg-transparent text-[11px] text-[#f5e9d4] md:mt-5 md:w-full md:justify-between md:border-t md:border-[#547469] md:pt-4 md:text-xs" onClick={logout}>Cerrar sesión <Arrow /></button>
-      </div>
-    </aside>
-    <main className="flex min-w-0 flex-col">
-      <header className="flex items-center justify-between gap-5 border-b border-line px-5 py-4 text-[11px] break-all md:px-10 md:py-6 md:text-xs"><span>{crew?.teamCode}</span><span className="text-[10px] text-muted md:text-[11px]">{crew?.email}</span></header>
-      <div className="mx-auto w-full max-w-[1150px] px-5 py-8 md:px-10 md:py-11">
-        <div className="mb-7"><h1 className="font-serif text-[31px] leading-tight font-normal tracking-tight md:text-[clamp(28px,3vw,38px)]">Bitácora de la tripulación</h1><p className="mt-2.5 text-[13px] break-words text-muted">{crew ? `Bienvenida a bordo, ${crew.teamName}.` : 'El punto de partida de tu próxima aventura.'}</p></div>
+  return <ConsoleLayout>        <div className="mb-7"><h1 className="font-serif text-[31px] leading-tight font-normal tracking-tight md:text-[clamp(28px,3vw,38px)]">Bitácora de la tripulación</h1><p className="mt-2.5 text-[13px] break-words text-muted">{crew ? `Bienvenida a bordo, ${crew.teamName}.` : 'El punto de partida de tu próxima aventura.'}</p></div>
         <section className="mt-8" aria-labelledby="summary-title"><div className="flex items-center justify-between gap-3"><h2 className={sectionTitle} id="summary-title">Tu tripulación, de un vistazo</h2>{state.status === 'error' && <button className={textButton} onClick={() => setAttempt(value => value + 1)}>Reintentar</button>}</div>
           {state.status === 'loading' ? <Loading>Cargando indicadores…</Loading>
             : state.status === 'error' ? <div className="mt-4"><Status tone="error">{state.message} Puedes reintentar la carga.</Status></div>
@@ -177,10 +155,7 @@ function Dashboard() {
         <section className="mt-9" aria-labelledby="route-title"><h2 className={sectionTitle} id="route-title">La ruta de la tripulación</h2>
           <ol className="mt-4">{[['CP1', 'Zarpar', 'Acceso y bitácora', 'Acceso iniciado'], ['CP2', 'Se Busca', 'Carteles y recompensas', 'Próxima etapa'], ['CP3', 'Reverse Mountain', 'Inspección presencial', 'Requiere CP1 y CP2']].map(([code, title, detail, note]) => <li className="flex items-center gap-2.5 border-t border-line py-4 md:gap-4" key={code}><span className="w-8 text-[11px] text-[#647358] tabular-nums">{code}</span><div><h3 className="text-[13px] font-semibold">{title}</h3><p className="mt-1 text-[11px] text-muted">{detail}</p></div><small className="ml-auto max-w-24 text-right text-[10px] text-muted md:max-w-none">{note}</small></li>)}</ol>
         </section>
-      </div>
-      <footer className="mt-auto border-t border-line px-5 py-5 text-[10px] text-muted md:px-10">Log Pose Console · Rumbo al Grand Line</footer>
-    </main>
-  </div>
+  </ConsoleLayout>
 }
 
 function NotFound() {
@@ -188,5 +163,5 @@ function NotFound() {
 }
 
 export function App() {
-  return <Routes><Route path="/" element={<Navigate to="/dashboard" replace />} /><Route path="/login" element={<AuthPage key="login" />} /><Route path="/register" element={<AuthPage key="register" register />} /><Route element={<PrivateRoute />}><Route path="/dashboard" element={<Dashboard />} /></Route><Route path="*" element={<NotFound />} /></Routes>
+  return <Routes><Route path="/" element={<Navigate to="/dashboard" replace />} /><Route path="/login" element={<AuthPage key="login" />} /><Route path="/register" element={<AuthPage key="register" register />} /><Route element={<PrivateRoute />}><Route path="/dashboard" element={<Dashboard />} /><Route path="/wanted" element={<WantedPage />}><Route path=":id" element={<WantedDetail />} /></Route></Route><Route path="*" element={<NotFound />} /></Routes>
 }
