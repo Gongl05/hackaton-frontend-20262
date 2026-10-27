@@ -32,15 +32,6 @@ export interface Gateway {
   dashboard(token: string, signal: AbortSignal): Promise<DashboardData>
 }
 
-const unavailable = async (): Promise<never> => {
-  throw new ServiceError('La conexión con el curso está desactivada. No se envió ningún dato.', 'offline')
-}
-
-// Disponible para tests aislados y una configuración sin URL.
-export const disconnectedGateway: Gateway = {
-  login: unavailable, register: unavailable, restore: unavailable, dashboard: unavailable,
-}
-
 type JsonObject = Record<string, unknown>
 function object(value: unknown): JsonObject {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new ServiceError('El servidor devolvió una respuesta inesperada. Reintenta la operación.', 'network')
