@@ -1,24 +1,3 @@
-## Ejecutar CP1
-
-CP1 incluye registro, login, sesión, dashboard y Log Pose conectados a la API del curso.
-Requiere Node 24. Desde esta carpeta:
-
-```sh
-npm ci
-npm run dev
-```
-
-Si falta `.env`, copia `.env.example` como `.env`. Abre la dirección que muestra
-Vite. Registra tu tripulación desde la aplicación con nombre, email y contraseña,
-o inicia sesión si ya tienen una cuenta. Crear una tripulación registra una cuenta
-real en el servidor: usen una sola por equipo.
-
-Consulta [la guía de CP1](CP1.md) para los requisitos y verificaciones.
-Ejecuta `npm test` y `npm run build` para verificar el proyecto.
-Los integrantes y sus códigos universitarios están pendientes de completar antes
-de la entrega final. CP2 a CP5 permanecen pendientes.
-
----
 # Hackathon Frontend: One Piece — Rumbo al Grand Line
 
 > *"¡El One Piece existe!"* — Edward Newgate
