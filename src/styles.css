@@ -17,6 +17,53 @@
   --color-moss: #e9eddf;
 }
 
+/* CP5 · Barra de progreso de la historia.
+   Con soporte: CSS Scroll-driven Animations. Sin soporte (o con reduced motion): JS actualiza --saga-scroll. */
+.saga-scroll-progress {
+  transform-origin: 0 50%;
+  transform: scaleX(var(--saga-scroll, 0));
+}
+
+@keyframes saga-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes saga-reveal {
+  from { translate: 0 40px; scale: 0.97; }
+  to { translate: 0 0; scale: 1; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: scroll()) {
+    .saga-scroll-progress {
+      animation: saga-progress linear both;
+      animation-timeline: scroll(root block);
+    }
+
+    /* Cada etapa aparece mientras entra en pantalla. Sin soporte, simplemente se ve completa. */
+    .saga-stage-card {
+      animation: saga-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 30%;
+    }
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.35s;
+  }
+}
+
+/* Con reduced motion no hay animaciones de transición entre páginas. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
 @layer base {
   body {
     @apply min-w-80 bg-paper font-sans text-ink antialiased;

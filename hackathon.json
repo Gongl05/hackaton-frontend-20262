@@ -1,0 +1,9 @@
+{
+  "equipo": "Uliboy",
+  "codigoEquipo": "TEAM-___",
+  "integrantes": [
+    { "nombre": "Mathias Pariona", "codigo": "202210245" },
+    { "nombre": "Adriano Raffo",  "codigo": "202210481" },
+    { "nombre": "Gonzalo Gaviño", "codigo": "202210146" }
+  ]
+}

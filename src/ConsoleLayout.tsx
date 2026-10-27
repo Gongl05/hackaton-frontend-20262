@@ -14,8 +14,7 @@ export function ConsoleLayout({ children }: { children: ReactNode }) {
     <aside className="flex flex-col gap-4 bg-sea px-5 py-4 text-[#f4e9d4] md:gap-0 md:px-6 md:py-8">
       <Brand to="/dashboard" />
       <nav className="grid grid-cols-4 gap-1 md:mt-14 md:grid-cols-1 md:gap-2" aria-label="Navegación principal">
-        {[['/dashboard', 'Bitácora'], ['/wanted', 'Carteles']].map(([to, label]) => <NavLink key={to} to={to} className={({ isActive }) => `${navClass} ${isActive ? 'bg-sea-active text-[#fff4db]' : 'text-[#b3c6b8] hover:bg-sea-hover'}`}>{label}</NavLink>)}
-        {[['Noticias', 'CP4'], ['Sagas', 'CP5']].map(([label, checkpoint]) => <span key={label} className={`${navClass} text-[#b3c6b8]`}>{label}<small className="hidden rounded-sm border border-[#5d7e71] px-1 py-0.5 text-[9px] md:inline">{checkpoint}</small></span>)}
+        {[['/dashboard', 'Bitácora'], ['/wanted', 'Carteles'], ['/news', 'Noticias'], ['/sagas', 'Sagas']].map(([to, label]) => <NavLink key={to} to={to} className={({ isActive }) => `${navClass} ${isActive ? 'bg-sea-active text-[#fff4db]' : 'text-[#b3c6b8] hover:bg-sea-hover'}`}>{label}</NavLink>)}
       </nav>
       <div className="flex items-center justify-between gap-4 text-[10px] text-[#bbd0bf] md:mt-auto md:block md:pt-16"><span className="hidden md:inline">El viaje empieza en East Blue.</span><button className="flex cursor-pointer items-center justify-end gap-2.5 bg-transparent text-[11px] text-[#f5e9d4] md:mt-5 md:w-full md:justify-between md:border-t md:border-[#547469] md:pt-4 md:text-xs" onClick={logout}>Cerrar sesión <Arrow /></button></div>
     </aside>

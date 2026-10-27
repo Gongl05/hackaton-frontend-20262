@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Link } from 'react-router'
 
 export function Compass({ className = 'size-11' }: { className?: string }) {
   return <svg className={`shrink-0 ${className}`} viewBox="0 0 200 200" fill="none" aria-hidden="true">
@@ -22,6 +23,16 @@ export function Status({ children, tone = 'neutral' }: { children: ReactNode; to
 }
 export function Loading({ children = 'Comprobando tu sesión…' }: { children?: ReactNode }) {
   return <div className="flex min-h-36 items-center justify-center gap-3 text-sm text-muted" role="status"><Spinner />{children}</div>
+}
+
+// Respuesta 423: el Grand Line se desbloquea solo al aprobar la inspección del CP3.
+export function GrandLineLocked() {
+  return <div className="flex min-h-80 flex-col items-center justify-center rounded-md border border-[#d4ddc9] bg-moss p-8 text-center">
+    <Compass className="mb-4 size-16 text-[#677d56]" />
+    <h2 className="font-serif text-2xl">El Grand Line sigue bloqueado</h2>
+    <p className="mt-3 max-w-md text-sm text-muted">Esta sección necesita el Log Pose. Se obtiene al aprobar la inspección presencial del CP3 en Reverse Mountain.</p>
+    <Link className={`${textButton} mt-4`} to="/dashboard">Ver el estado del Log Pose</Link>
+  </div>
 }
 
 // Clases compartidas por botones y formularios.

@@ -7,6 +7,8 @@ import type { DashboardData, FieldErrors } from './services'
 import { apiConfigured, ServiceError } from './services'
 import { Brand, ConsoleLayout } from './ConsoleLayout'
 import { WantedPage, WantedDetail } from './Wanted'
+import { NewsDetail, NewsPage } from './News'
+import { SagaStoryPage, SagasPage } from './Sagas'
 
 const labelClass = 'mb-2 block text-xs font-semibold'
 const inputClass = 'h-12 w-full rounded-md border border-[#bbc6bb] bg-[#fdfcf8] px-3 text-sm text-ink placeholder:text-[#727c73] aria-invalid:border-danger disabled:opacity-70'
@@ -163,5 +165,5 @@ function NotFound() {
 }
 
 export function App() {
-  return <Routes><Route path="/" element={<Navigate to="/dashboard" replace />} /><Route path="/login" element={<AuthPage key="login" />} /><Route path="/register" element={<AuthPage key="register" register />} /><Route element={<PrivateRoute />}><Route path="/dashboard" element={<Dashboard />} /><Route path="/wanted" element={<WantedPage />}><Route path=":id" element={<WantedDetail />} /></Route></Route><Route path="*" element={<NotFound />} /></Routes>
+  return <Routes><Route path="/" element={<Navigate to="/dashboard" replace />} /><Route path="/login" element={<AuthPage key="login" />} /><Route path="/register" element={<AuthPage key="register" register />} /><Route element={<PrivateRoute />}><Route path="/dashboard" element={<Dashboard />} /><Route path="/wanted" element={<WantedPage />}><Route path=":id" element={<WantedDetail />} /></Route><Route path="/news" element={<NewsPage />}><Route path=":id" element={<NewsDetail />} /></Route><Route path="/sagas" element={<SagasPage />} /><Route path="/sagas/:id" element={<SagaStoryPage />} /></Route><Route path="*" element={<NotFound />} /></Routes>
 }

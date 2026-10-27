@@ -1,5 +1,8 @@
 import type { PirateCrew, WantedItem, WantedQuery, WantedPageData, WantedDetailData } from './wanted-models'
 import { wantedSearch, wantedStatuses } from './wanted-models'
+import type { NewsDetailData, NewsFeedPage, NewsItem, NewsQuery, VerifiedStatus } from './news-models'
+import { newsPriorities, newsSearch, newsStatuses, newsTypes } from './news-models'
+import type { Palette, SagaStage, SagaStory, SagaSummary } from './saga-models'
 // Modelo del frontend, adaptado al contrato público /docs/json.
 export interface Crew { teamName: string; teamCode: string; email: string }
 export interface Session { token: string; crew: Crew }
@@ -17,13 +20,19 @@ export interface DashboardData {
 }
 
 export class ServiceError extends Error {
-  readonly kind: 'offline' | 'unauthorized' | 'validation' | 'network' | 'not-found'
+  // locked: endpoint del Grand Line sin Log Pose (423).
+  readonly kind: 'offline' | 'unauthorized' | 'validation' | 'network' | 'not-found' | 'locked'
   readonly fields: FieldErrors
-  constructor(message: string, kind: ServiceError['kind'], fields: FieldErrors = {}) {
+  // Código estable de la API (p. ej. NEWS_ALREADY_VERIFIED) y la noticia actual que trae el 409.
+  readonly code: string
+  readonly current: unknown
+  constructor(message: string, kind: ServiceError['kind'], fields: FieldErrors = {}, code = '', current: unknown = null) {
     super(message)
     this.name = 'ServiceError'
     this.kind = kind
     this.fields = fields
+    this.code = code
+    this.current = current
   }
 }
 
@@ -35,6 +44,11 @@ export interface Gateway {
   crews(token: string, signal: AbortSignal): Promise<PirateCrew[]>
   wanted(token: string, query: WantedQuery, signal: AbortSignal): Promise<WantedPageData>
   wantedDetail(token: string, id: string, signal: AbortSignal): Promise<WantedDetailData>
+  newsFeed(token: string, query: NewsQuery, cursor: string | null, signal: AbortSignal): Promise<NewsFeedPage>
+  newsDetail(token: string, id: string, signal: AbortSignal): Promise<NewsDetailData>
+  verifyNews(token: string, id: string, status: VerifiedStatus): Promise<NewsDetailData>
+  sagas(token: string, signal: AbortSignal): Promise<SagaSummary[]>
+  sagaStory(token: string, id: string, signal: AbortSignal): Promise<SagaStory>
 }
 
 type JsonObject = Record<string, unknown>
@@ -68,6 +82,60 @@ function readWanted(value: unknown): WantedItem {
     threatLevel: count(item.threatLevel), lastSeenIsland: text(item.lastSeenIsland), updatedAt: text(item.updatedAt),
   }
 }
+function finite(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) throw new ServiceError('Los datos recibidos no tienen el formato esperado.', 'network')
+  return value
+}
+function color(value: unknown): string {
+  const hex = text(value)
+  if (!/^#[0-9a-f]{3,8}$/i.test(hex)) throw new ServiceError('La paleta recibida no tiene el formato esperado.', 'network')
+  return hex
+}
+function texts(value: unknown): string[] {
+  if (!Array.isArray(value)) throw new ServiceError('La respuesta del servidor está incompleta. Reintenta la operación.', 'network')
+  return value.map(text)
+}
+function oneOf<T extends string>(options: readonly T[], value: unknown): T {
+  const match = options.find(option => option === value)
+  if (!match) throw new ServiceError('La respuesta contiene un valor desconocido. Reintenta la operación.', 'network')
+  return match
+}
+function readNews(value: unknown): NewsItem {
+  const item = object(value)
+  const related = item.relatedWanted === null ? null : object(item.relatedWanted)
+  return {
+    id: text(item.id), type: oneOf(newsTypes, item.type), priority: oneOf(newsPriorities, item.priority), status: oneOf(newsStatuses, item.status),
+    title: text(item.title), summary: text(item.summary), source: text(item.source), island: text(item.island),
+    relatedWanted: related ? { id: text(related.id), name: text(related.name) } : null,
+    publishedAt: text(item.publishedAt), updatedAt: text(item.updatedAt), verifiedAt: item.verifiedAt === null ? null : text(item.verifiedAt),
+  }
+}
+export function readNewsDetail(value: unknown): NewsDetailData {
+  return { ...readNews(value), body: texts(object(value).body) }
+}
+function readPalette(value: unknown): Palette {
+  const palette = object(value)
+  return { background: color(palette.background), surface: color(palette.surface), primary: color(palette.primary), accent: color(palette.accent), text: color(palette.text) }
+}
+function readSaga(value: unknown): SagaSummary {
+  const saga = object(value)
+  return {
+    id: text(saga.id), order: count(saga.order), title: text(saga.title), subtitle: text(saga.subtitle), synopsis: text(saga.synopsis),
+    stageCount: count(saga.stageCount), totalDistanceNm: count(saga.totalDistanceNm), firstIsland: text(saga.firstIsland), lastIsland: text(saga.lastIsland),
+    palette: readPalette(saga.palette),
+  }
+}
+function readStage(value: unknown): SagaStage {
+  const stage = object(value)
+  const island = object(stage.island)
+  if (!Array.isArray(stage.metrics)) throw new ServiceError('Las métricas de la etapa están incompletas.', 'network')
+  return {
+    id: text(stage.id), order: count(stage.order), slug: text(stage.slug), title: text(stage.title), narrative: texts(stage.narrative),
+    island: { id: text(island.id), name: text(island.name), x: finite(island.x), y: finite(island.y) },
+    palette: readPalette(stage.palette),
+    metrics: stage.metrics.map(entry => { const metric = object(entry); return { key: text(metric.key), label: text(metric.label), value: finite(metric.value), unit: text(metric.unit) } }),
+  }
+}
 function apiError(payload: unknown, status: number, retryAfter: string | null): ServiceError {
   const data = payload && typeof payload === 'object' ? payload as JsonObject : {}
   const code = typeof data.code === 'string' ? data.code : ''
@@ -87,12 +155,14 @@ function apiError(payload: unknown, status: number, retryAfter: string | null): 
     const seconds = Number(retryAfter ?? data.retryAfterSeconds)
     message = Number.isFinite(seconds) && seconds > 0 ? `Demasiadas solicitudes. Espera ${Math.ceil(seconds)} segundos antes de reintentar.` : 'Demasiadas solicitudes. Espera un momento antes de reintentar.'
   }
-  return new ServiceError(message, status === 404 ? 'not-found' : status === 401 && code !== 'INVALID_CREDENTIALS' ? 'unauthorized' : status < 500 ? 'validation' : 'network', fields)
+  if (status === 423) message = 'El Grand Line sigue bloqueado: la tripulación necesita el Log Pose de la inspección del CP3.'
+  const kind = status === 404 ? 'not-found' : status === 423 ? 'locked' : status === 401 && code !== 'INVALID_CREDENTIALS' ? 'unauthorized' : status < 500 ? 'validation' : 'network'
+  return new ServiceError(message, kind, fields, code, data.current ?? null)
 }
 
 export function createHttpGateway(baseUrl: string, fetcher: typeof fetch = (...args) => fetch(...args)): Gateway {
   const base = baseUrl.trim().replace(/\/+$/, '')
-  async function requestJson(path: string, options: { token?: string; body?: Credentials | Registration; signal?: AbortSignal } = {}): Promise<unknown> {
+  async function requestJson(path: string, options: { token?: string; method?: 'GET' | 'POST' | 'PATCH'; body?: Credentials | Registration | { status: VerifiedStatus }; signal?: AbortSignal } = {}): Promise<unknown> {
     if (!base) throw new ServiceError('Falta configurar VITE_API_BASE_URL. Revisa el archivo .env y reinicia la aplicación.', 'offline')
     const controller = new AbortController()
     const abort = () => controller.abort()
@@ -104,7 +174,7 @@ export function createHttpGateway(baseUrl: string, fetcher: typeof fetch = (...a
       if (options.token) headers.Authorization = `Bearer ${options.token}`
       if (options.body) headers['Content-Type'] = 'application/json'
       const response = await fetcher(`${base}${path}`, {
-        method: options.body ? 'POST' : 'GET', headers,
+        method: options.method ?? (options.body ? 'POST' : 'GET'), headers,
         body: options.body ? JSON.stringify(options.body) : undefined,
         signal: controller.signal, credentials: 'omit', cache: 'no-store', redirect: 'error',
       })
@@ -154,6 +224,33 @@ export function createHttpGateway(baseUrl: string, fetcher: typeof fetch = (...a
         ...readWanted(payload), age: count(payload.age), heightCm: count(payload.heightCm), bio: text(payload.bio),
         lastSeen: { island: text(lastSeen.island), seenAt: text(lastSeen.seenAt) },
         bountyHistory: payload.bountyHistory.map(value => { const entry = object(value); return { amount: count(entry.amount), issuedAt: text(entry.issuedAt) } }),
+      }
+    },
+    newsFeed: async (token, query, cursor, signal) => {
+      const params = new URLSearchParams(newsSearch(query))
+      params.set('limit', '20')
+      // El cursor queda ligado a los filtros: siempre se envía con los mismos filtros con los que se obtuvo.
+      if (cursor) params.set('cursor', cursor)
+      const payload = await request(`/news/feed?${params}`, { token, signal })
+      if (!Array.isArray(payload.items) || typeof payload.hasMore !== 'boolean') throw new ServiceError('No pudimos leer las noticias. Reintenta la carga.', 'network')
+      return { items: payload.items.map(readNews), nextCursor: payload.nextCursor === null ? null : text(payload.nextCursor), hasMore: payload.hasMore }
+    },
+    newsDetail: async (token, id, signal) => readNewsDetail(await request(`/news/${encodeURIComponent(id)}`, { token, signal })),
+    verifyNews: async (token, id, status) => readNewsDetail(await request(`/news/${encodeURIComponent(id)}/status`, { token, method: 'PATCH', body: { status } })),
+    sagas: async (token, signal) => {
+      const payload = await requestJson('/sagas', { token, signal })
+      if (!Array.isArray(payload)) throw new ServiceError('No pudimos leer las sagas. Reintenta la carga.', 'network')
+      return payload.map(readSaga)
+    },
+    sagaStory: async (token, id, signal) => {
+      const payload = await request(`/sagas/${encodeURIComponent(id)}/story`, { token, signal })
+      const saga = object(payload.saga)
+      const map = object(payload.map)
+      if (!Array.isArray(payload.stages) || payload.stages.length === 0) throw new ServiceError('La historia de la saga no tiene etapas.', 'network')
+      return {
+        saga: { ...readSaga(saga), intro: text(saga.intro) },
+        map: { width: count(map.width), height: count(map.height) },
+        stages: payload.stages.map(readStage).sort((a, b) => a.order - b.order),
       }
     },
     dashboard: async (token, signal) => {
