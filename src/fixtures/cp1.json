@@ -1,0 +1,127 @@
+{
+  "summary": {
+    "team": {
+      "code": "TEAM-007",
+      "name": "Sabuesos de la Marea"
+    },
+    "wanted": {
+      "total": 12,
+      "totalBounty": 6315100000,
+      "averageBounty": 526258333,
+      "byStatus": {
+        "AT_LARGE": 9,
+        "CAPTURED": 2,
+        "MISSING": 1
+      },
+      "byFruit": {
+        "PARAMECIA": 1,
+        "ZOAN": 2,
+        "LOGIA": 0,
+        "NONE": 9
+      }
+    },
+    "crews": {
+      "total": 4,
+      "mostWanted": {
+        "id": "crw_oad9cbu2",
+        "name": "Piratas de la Marea Negra",
+        "shipName": "Ballena Testaruda",
+        "jollyRogerColor": "#1e40af",
+        "memberCount": 4,
+        "totalBounty": 2629400000
+      }
+    },
+    "topBounties": [
+      {
+        "id": "wnt_3l3fmdtm",
+        "name": "Kenta Castañeda",
+        "epithet": "Látigo del Sur",
+        "bounty": 1901000000,
+        "status": "AT_LARGE",
+        "crew": {
+          "id": "crw_oad9cbu2",
+          "name": "Piratas de la Marea Negra"
+        },
+        "role": "CAPTAIN",
+        "devilFruit": null,
+        "threatLevel": 5,
+        "lastSeenIsland": "Isla Remolino",
+        "updatedAt": "2026-07-28T03:10:58Z"
+      },
+      {
+        "id": "wnt_2fkulpe4",
+        "name": "Begoña Iturbe",
+        "epithet": "Garra de Sal",
+        "bounty": 1229000000,
+        "status": "AT_LARGE",
+        "crew": {
+          "id": "crw_qv8x43p4",
+          "name": "Piratas Cuervo de Ceniza"
+        },
+        "role": "CAPTAIN",
+        "devilFruit": null,
+        "threatLevel": 5,
+        "lastSeenIsland": "Isla Brumaverde",
+        "updatedAt": "2026-09-16T11:44:00Z"
+      },
+      {
+        "id": "wnt_y7h9dbma",
+        "name": "Jubei Okamoto",
+        "epithet": "Trompeta de Guerra",
+        "bounty": 832000000,
+        "status": "AT_LARGE",
+        "crew": {
+          "id": "crw_vwolcuad",
+          "name": "Piratas del Eclipse"
+        },
+        "role": "CAPTAIN",
+        "devilFruit": {
+          "name": "Fruta Burbuja Burbuja",
+          "type": "PARAMECIA"
+        },
+        "threatLevel": 4,
+        "lastSeenIsland": "Isla Reloj de Arena",
+        "updatedAt": "2026-09-05T01:31:59Z"
+      },
+      {
+        "id": "wnt_6ge1o2o9",
+        "name": "Ramón Del Mar",
+        "epithet": "Pluma Venenosa",
+        "bounty": 611000000,
+        "status": "AT_LARGE",
+        "crew": {
+          "id": "crw_vwolcuad",
+          "name": "Piratas del Eclipse"
+        },
+        "role": "FIRST_MATE",
+        "devilFruit": null,
+        "threatLevel": 4,
+        "lastSeenIsland": "Isla de las Mil Escaleras",
+        "updatedAt": "2026-07-16T07:13:54Z"
+      },
+      {
+        "id": "wnt_sx4d07x6",
+        "name": "Bartolo Montenegro",
+        "epithet": "Cometa Fugaz",
+        "bounty": 407000000,
+        "status": "CAPTURED",
+        "crew": {
+          "id": "crw_qv8x43p4",
+          "name": "Piratas Cuervo de Ceniza"
+        },
+        "role": "FIRST_MATE",
+        "devilFruit": null,
+        "threatLevel": 4,
+        "lastSeenIsland": "Isla Nevada del Sur",
+        "updatedAt": "2026-07-29T01:16:50Z"
+      }
+    ],
+    "generatedAt": "2026-10-15T15:00:00Z"
+  },
+  "logPose": {
+    "status": "LOCKED",
+    "grandLineUnlocked": false,
+    "unlockedAt": null,
+    "message": "Aún no tienen Log Pose. Pidan la inspección en Reverse Mountain cuando el CP1 y el CP2 funcionen."
+  }
+}

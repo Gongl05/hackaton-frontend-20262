@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-26T00:00:00-05:00",
+  "title": "Design System: Log Pose Console",
+  "extensions": {
+    "colorMeta": {
+      "green": { "role": "primary", "displayName": "Verde de navegación" },
+      "accent": { "role": "primary", "displayName": "Dorado de rumbo" },
+      "paper": { "role": "neutral", "displayName": "Papel cálido" },
+      "ink": { "role": "neutral", "displayName": "Tinta verde" },
+      "red": { "role": "semantic", "displayName": "Error cálido" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Bienvenida", "purpose": "Título de identidad del acceso." },
+      "headline": { "displayName": "Página", "purpose": "Encabezado editorial de la consola." },
+      "body": { "displayName": "Lectura", "purpose": "Introducciones y descripciones en sans serif." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "loading-turn", "value": "turn .85s linear infinite", "purpose": "Aro de espera; se elimina con prefers-reduced-motion: reduce." }
+    ],
+    "breakpoints": [
+      { "name": "compact", "value": "max-width: 900px" },
+      { "name": "mobile", "value": "max-width: 650px" },
+      { "name": "wide", "value": "min-width: 1500px" }
+    ],
+    "focus": { "value": "3px solid #96703c", "offset": "4px", "purpose": "Orientación visible de teclado para botones, enlaces y campos." },
+    "reducedMotion": "@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}"
+  },
+  "components": [
+    {
+      "name": "Acción principal",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Acción principal del formulario; muestra espera cuando está deshabilitada.",
+      "html": "<button class=\"ds-primary\" type=\"button\">Iniciar sesión</button>",
+      "css": ".ds-primary{font:600 13px 'Segoe UI',sans-serif;min-height:48px;border:0;border-radius:5px;background:var(--green);color:#fffaf0;padding:12px 18px;cursor:pointer}.ds-primary:hover{background:#24544b}.ds-primary:focus-visible{outline:3px solid #96703c;outline-offset:4px}.ds-primary:disabled{opacity:.65;cursor:wait}"
+    },
+    {
+      "name": "Campo con etiqueta",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Etiqueta persistente y entrada de email; error identificado por texto y borde.",
+      "html": "<div class=\"ds-field\"><label for=\"ds-email\">Email de la tripulación</label><input id=\"ds-email\" type=\"email\" placeholder=\"tripulacion@ejemplo.com\" autocomplete=\"email\"></div>",
+      "css": ".ds-field{font-family:'Segoe UI',sans-serif;color:var(--ink)}.ds-field label{display:block;font-size:12px;font-weight:600;margin-bottom:9px}.ds-field input{width:100%;height:48px;border:1px solid #bbc6bb;border-radius:5px;background:#fdfcf8;padding:0 13px;font:14px 'Segoe UI',sans-serif;color:var(--ink);caret-color:var(--green)}.ds-field input::placeholder{color:#727c73}.ds-field input:focus-visible{outline:3px solid #96703c;outline-offset:4px}.ds-field input[aria-invalid=true]{border-color:var(--red)}"
+    },
+    {
+      "name": "Aviso de vista previa",
+      "kind": "custom",
+      "refersTo": "notice",
+      "description": "Información explícita sobre el estado local, sin simular datos ni autenticación.",
+      "html": "<div class=\"ds-notice\" role=\"status\">Estás explorando una vista previa. No se ha iniciado sesión ni enviado información al curso.</div>",
+      "css": ".ds-notice{font:12px/1.65 'Segoe UI',sans-serif;color:var(--ink);background:#edf0e8;border:1px solid #cbd5c6;border-radius:5px;padding:13px 16px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Operate",
+    "overview": "Una bitácora de navegación que permite operar con claridad: verde profundo para orientar, papel cálido para leer y una brújula original como firma. La identidad acompaña al trabajo con títulos serenos, controles directos y densidad contenida. La interfaz usa fuentes del sistema y SVG propios; la identidad se comprime en móvil para dejar espacio al formulario y al contenido.",
+    "keyCharacteristics": ["Navegación verde y superficies cálidas", "Títulos serif y controles sans serif", "Separadores finos y superficies planas", "Brújula propia y acento dorado contenido"],
+    "rules": [ { "name": "The Semantic Color Rule", "body": "Los errores y estados se explican también con texto; el color no sustituye el mensaje.", "section": "colors" } ],
+    "dos": ["Do preservar etiquetas y foco visible", "Do condensar la identidad móvil", "Do identificar vistas sin conexión y estados sin datos"],
+    "donts": ["Don't presentar cifras inventadas como indicadores reales", "Don't añadir imágenes oficiales del anime ni fuentes remotas", "Don't convertir etapas futuras en acciones aparentes", "Don't añadir sombras o animación ornamental"]
+  }
+}
